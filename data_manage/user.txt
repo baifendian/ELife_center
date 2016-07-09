@@ -1,9 +1,0 @@
-{"status": 0, "name": "Max", "like_goods": [1040, 1029, 1036, 1035, 1025], "credits": 5890, "sign_in_num": 2, "logo": "8.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "David", "like_goods": [1041, 1026, 1013, 1040, 1033, 1017, 1022, 1014, 1027], "credits": 100, "sign_in_num": 6, "logo": "7.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Terry", "like_goods": [1029, 1013, 1044, 1022, 1049, 1034, 1003, 1019, 1016, 1038, 1004, 1046, 1045, 1037,1024, 1006, 1035, 1026, 1031, 1015, 1039, 1027], "credits": 6649, "sign_in_num": 9, "logo": "1.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Tiger", "like_goods": [1037, 1044, 1025, 1035, 1004, 1050, 1027, 1007, 1030, 1028, 1024, 1038, 1045, 1018], "credits": 8743, "sign_in_num": 10, "logo": "6.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Billy", "like_goods": [1008, 1001, 1038, 1039, 1022, 1013, 1030, 1006, 1043, 1045, 1027], "credits": 2782,"sign_in_num": 5, "logo": "5.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Tiwei", "like_goods": [1034, 1019, 1016, 1022, 1017, 1023, 1046, 1031, 1039, 1010, 1013], "credits": 6482,"sign_in_num": 9, "logo": "9.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Ivory", "like_goods": [1018, 1044, 1034, 1015, 1040, 1017, 1004, 1046, 1035, 1027, 1016], "credits": 642, "sign_in_num": 3, "logo": "5.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Tangxing", "like_goods": [1032, 1012, 1030, 1004, 1026, 1006, 1047, 1033, 1014, 1002, 1011, 1044, 1016, 1042], "credits": 2103, "sign_in_num": 3, "logo": "4.png", "password": "96e79218965eb72c92a549dd5a330112"}
-{"status": 0, "name": "Liuchi", "like_goods": [1017, 1033, 1050, 1022, 1045, 1040, 1042, 1011], "credits": 2208, "sign_in_num": 8, "logo": "1.png", "password": "96e79218965eb72c92a549dd5a330112"}

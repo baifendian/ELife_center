@@ -36,14 +36,7 @@ class RedisClient(threading.Thread):
     def get_all_content(self,name):
         result=self.client.hgetall(name)
         return result
-    def set_one_content_to_queue(self):
-        pass
-    def get_one_content_from_queue(self):
-        pass
-    def del_one_content_from_queue(self,name):
-        return self.client.hdel(name)
-    def get_all_content_from_queue(self):
-        pass
+
 if __name__=='__main__':
     import json
     redis_client=RedisClient('172.24.3.175',6380,0)

@@ -37,7 +37,7 @@ def check_login(user_name):
     result=redis_client.get_all_content(settings.USERS_HASH_NAME)
     if user_name in result.keys():
         user=user_manage.User(result[user_name])
-        if user.statue==1:
+        if user.status==1:
             return True
         
     return False

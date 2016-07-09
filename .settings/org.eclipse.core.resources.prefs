@@ -2,7 +2,6 @@ eclipse.preferences.version=1
 encoding//codis_manage/codis_manager.py=utf-8
 encoding//data_manage/goods_manage.py=utf-8
 encoding//data_manage/record_manage.py=utf-8
-encoding//data_manage/test.py=utf-8
 encoding//data_manage/user_manage.py=utf-8
 encoding//tools/mylogger.py=utf-8
 encoding//user_manage/function_manage.py=utf-8
