@@ -22,7 +22,7 @@ class User(object):
         self.sign_in_day=dict_object.get('sign_in_day','')
         self.sign_in_num=dict_object.get('sign_in_num',0)
         self.logo=dict_object.get('logo','')
-        self.statue=dict_object.get('statue',0)
+        self.status=dict_object.get('status',0)
     def object_to_json(self):
         attribute={
                    'name':self.name,
@@ -32,7 +32,7 @@ class User(object):
                    'sign_in_num':self.sign_in_num,
                    'like_goods' :self.like_goods,  
                    'logo':self.logo,          
-                   'statue':self.statue,     
+                   'status':self.status,     
                    }
         return json.dumps(attribute,ensure_ascii=False,encoding='utf-8')
     def object_to_dict(self):

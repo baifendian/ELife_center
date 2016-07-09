@@ -35,7 +35,7 @@ class Record(object):
         return json.dumps(attribute,ensure_ascii=False,encoding='utf-8')
     def object_to_dict(self):
         attribute={
-                   'time':self.time,
+                   'time':self.time[0:22],
                    'goods_name':self.goods_name,
                    'image':self.image,
                    'introduction':self.introduction,

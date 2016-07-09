@@ -7,6 +7,7 @@ import hashlib
 import random
 import datetime
 from django.shortcuts import render
+from django.shortcuts import render_to_response
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from data_manage import goods_manage,user_manage,record_manage
@@ -36,7 +37,8 @@ def login(request):
     if not password:
         result={'code':402,'msg':'not input password'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
-    result=redis_client.get_all_content('e_live_users')
+    result=redis_client.get_all_content(settings.USERS_HASH_NAME)
+    user_name=user_name.lower()
     if user_name not in result.keys():
         result={'code':403,'msg':'the username not exist'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
@@ -66,6 +68,7 @@ def logout(request):
     if not user_name:
         result={'code':1201,'msg':'not input username'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
+    user_name=user_name.lower()
     result=redis_client.get_all_content(settings.USERS_HASH_NAME)
     if user_name not in result.keys():
         result={'code':1202,'msg':'the username not exist'}
@@ -88,27 +91,41 @@ def routette(request):
     '''
     redis_client=function_manage.get_codis_connect()
     if not request.POST:
-        result={'code':500,'msg':'not input username and password'}
+        result={'code':500,'msg':'not input post parmameters'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     username=request.POST.get('username')
+    if not username:
+        result={'code':501,'msg':'not input username'}
+        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     print username
+    username=username.lower()
     user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
+    print user_obj
+    if not user_obj:
+        result={'code':501,'msg':'the user not exist'}
+        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     user=user_manage.User(user_obj)
-    if user.statue!=1:
-        result={'code':501,'msg':'the user have not login'}
+    if user.status==1:
+        result={'code':502,'msg':'the user have not login'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     #print user.object_to_json()
     if user.credits<10:
-        result={'code':502,'msg':'the credits not enough'}
+        result={'code':503,'msg':'the credits not enough'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     else:
         user.credits=user.credits-10
         redis_client.set_one_content(settings.USERS_HASH_NAME, username, user.object_to_json())
         
-        prize,goods_id=function_manage.routette_lucky_draw(random.Random())
-        goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, goods_id)
-        goods=goods_manage.Goods(goods_obj)
-        result={'code':0,'msg':'ok','prizelevel':prize,'user':user.object_to_dict(),'prize':goods.object_to_dict()}
+        prize_level,goods_id=function_manage.routette_lucky_draw(random.Random())
+        if goods_id:
+            goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, goods_id)
+            goods=goods_manage.Goods(goods_obj)
+            prize=goods.object_to_dict()
+        else:
+            prize={}
+        result={'code':0,'msg':'ok','prizelevel':prize_level,'user':user.object_to_dict(),'prize':prize}
+        #需要保存记录
+           
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
 
 @csrf_exempt   
@@ -116,11 +133,12 @@ def credit_exchange(request):
     '''credit_exchange function
     '''
     redis_client=function_manage.get_codis_connect()
-    if not request.POST:
-        result={'code':600,'msg':'not input username and password'}
-        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     goods_id=request.POST.get('goodsid')
     username=request.POST.get('username')
+    if not goods_id or not username :
+        result={'code':600,'msg':'input parameter error'}
+        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
+    username=username.lower()
     goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, goods_id)
     user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
     user=user_manage.User(user_obj)
@@ -165,8 +183,12 @@ def lucky_draw(request):
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     goods_id=request.POST.get('goodsid')
     username=request.POST.get('username')
+    if not goods_id or not username :
+        result={'code':600,'msg':'input parameter error'}
+        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     print goods_id
     print username
+    username=username.lower()
     goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, goods_id)
     user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
     user=user_manage.User(user_obj)
@@ -195,11 +217,9 @@ def lucky_draw(request):
                       'credits':goods.lucky_draw_credits,
                       }
         redis_client.set_one_content(settings.RECORD_HASH_NAME,time_temp , json.dumps(lucky_drawl_log,ensure_ascii=False,encoding='utf-8'))
-        tmp=[i for i in range(100)]
-        if random.choice(tmp)<50:
+        lucky=function_manage.lucky_draw(random.Random())
+        if lucky!=0:
             lucky=1
-        else:
-            lucky=0
         result={'code':0,'msg':'ok','lucky':lucky,'user':user.object_to_dict()}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
 
@@ -207,29 +227,18 @@ def lucky_draw(request):
 def friends_invitation(request):
     '''invitation friends to add credits
     '''
-    redis_client=function_manage.get_codis_connect()
-    if not request.POST:
-        result={'code':600,'msg':'not input parameters'}
-        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
-    username=request.POST.get('username')
-    user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
-    user=user_manage.User(user_obj)
-    if user.statue!=1:
-        result={'code':601,'msg':'the user have not login'}
-        return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
-    url=''
-    result={'code':0,'msg':'ok','url':url}    
-    return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8')) 
+    return render_to_response('elife.html', {'results': ''})
 
 @csrf_exempt    
 def add_oil(request):
     '''friends add oil to user
     '''
     redis_client=function_manage.get_codis_connect()
-    if not request.GET:
+    if not request.POST:
         result={'code':600,'msg':'not input parameters'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
-    username=request.GET.get('username')
+    username=request.POST.get('username')
+    username=username.lower()
     user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
     user=user_manage.User(user_obj)
     '''
@@ -237,7 +246,7 @@ def add_oil(request):
         result={'code':601,'msg':'the user have not login'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     '''
-    user.credits+=10
+    user.credits+=5
     redis_client.set_one_content(settings.USERS_HASH_NAME,username, user.object_to_json())
     result={'code':0,'msg':'ok'}
     return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
@@ -254,6 +263,7 @@ def sign_in(request):
     if user_name not in result.keys():
         result={'code':801,'msg':'the username not exist'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
+    user_name=user_name.lower()
     user=result[user_name]
     user=user_manage.User(user)
     if user.sign_in_day==str(datetime.date.today()):
@@ -298,6 +308,7 @@ def get_like_goods(request):
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     print 'get_like_goods'
     print user_name
+    user_name=user_name.lower()
     goodses=function_manage.get_like_goods(user_name)
     result={'code':0,'msg':'ok','like_goods':goodses}
     return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
@@ -321,8 +332,9 @@ def get_records(request):
     if not function_manage.check_login(user_name):
         result={'code':1001,'msg':'the username have not login'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
+    user_name=user_name.lower()
     db_result=redis_client.get_all_content(settings.RECORD_HASH_NAME)
-    for key in sorted(db_result.keys()):
+    for key in sorted(db_result.keys())[::-1]:
         one_log=record_manage.Record(db_result[key])
         if one_log.username==user_name:
             record.append(one_log.object_to_dict())
@@ -366,6 +378,7 @@ def get_user_information(request):
     if user_name not in result.keys():
         result={'code':1103,'msg':'the username not exist'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
+    user_name=user_name.lower()
     user=result[user_name]
     user=user_manage.User(user)
     if user.statue!=1:

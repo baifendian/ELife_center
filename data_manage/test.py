@@ -55,41 +55,57 @@ def del_goods():
     for key in result.keys():
         redis_client.client.hdel('e_live_goods',key)
     print redis_client.client.hlen('e_live_goods')
+
+def del_users():
+    redis_client=codis_manager.RedisClient('172.24.3.175',6380,0) 
+    result=redis_client.get_all_content('e_live_users')
+    for key in result.keys():
+        redis_client.client.hdel('e_live_users',key)
+    print redis_client.client.hlen('e_live_users')
 def test_user():   
     redis_client=codis_manager.RedisClient('172.24.3.175',6380,0)
     password='bfd_test1'
     md5=hashlib.md5()
     md5.update(password)
     password=md5.hexdigest()
-    user={
-          'id':1,
-          'name':'bfd_test1',
-          'password':password,
-          'credits':99999,
-          'like_goods':[2,4,6,8,11],
-          'logo':'http://172.24.3.175:8000/static/img/761073794488571189.png',
-          }
-    redis_client.set_one_content('e_live_users', user['name'], json.dumps(user,ensure_ascii=False,encoding='utf-8'))
-    one_user=redis_client.get_one_content('e_live_users', 'bfd_test1')
-    user2=user_manage.User(one_user)
-    print user2.password
-    print user2.password==password
+    for user in open('user.txt').readlines():
+        print user
+        print json.loads(user)
+        user=user_manage.User(user)
+        user.name=user.name.lower()
+        user.logo='http://192.168.188.176:8000/static/images/user/'+user.logo
+        
+    
+        redis_client.set_one_content('e_live_users', user.name, user.object_to_json())
+    #one_user=redis_client.get_one_content('e_live_users', 'bfd_test1')
+    #user2=user_manage.User(one_user)
+    #print user2.password
+    #print user2.password==password
 
-def get_user(user_name):
+def test_logo():
     redis_client=codis_manager.RedisClient('172.24.3.175',6380,0)
-    one_user=redis_client.get_one_content('e_live_users', 'bfd_test1')
+    routette_image='http://192.168.188.176:8000/static/img/911313290023851437.png'
+    title_image='http://192.168.188.176:8000/static/img/154240156699238893.png'
+    json_object=redis_client.set_one_content('e_live_logo', 'routette_image', routette_image)
+    json_object=redis_client.set_one_content('e_live_logo', 'title_image', title_image)
+def get_user():
+    redis_client=codis_manager.RedisClient('172.24.3.175',6380,0)
+    one_user=redis_client.get_one_content('e_live_users', 'billy')
+    print one_user
     user2=user_manage.User(one_user)
     print user2.password
     print user2.object_to_json()
 
 def get_goods():
     redis_client=codis_manager.RedisClient('172.24.3.175',6380,0)
-    one_user=redis_client.get_one_content('e_live_goods', '10001')
+    one_user=redis_client.get_one_content('e_live_goods', '1049')
     print one_user
     a=redis_client.get_all_content('e_live_goods')
     print len(a)
     for i in sorted(a.keys()):
-        print type(json.loads(a[i])['is_credit_exchange'])
+        print i
+        print json.loads(a[i])['is_credit_exchange']
+        print type(json.loads(a[i])['is_lucky_goods'])
 def put_goods():
     redis_client=codis_manager.RedisClient('172.24.3.175',6380,0)
     goods_file=open('item_data.txt')
@@ -106,7 +122,7 @@ def put_goods():
             is_lucky=0
             is_exchange=1
         goods={   
-                   'goodsid':id,
+                   'goodsid':goods_old['prodid'],
                    'name':goods_old['name'],
                    'material':'',
                    'usage':'',
@@ -120,13 +136,14 @@ def put_goods():
                    'large_image':'http://192.168.188.176:8000/static/images/'+goods_old['images']['big'],
                    'medium_image':'http://192.168.188.176:8000/static/images/'+goods_old['images']['medium'],
                    'normal_image':'192.168.188.176:8000/static/images/'+goods_old['images']['normal'],
+                   'raw_image':'192.168.188.176:8000/static/images/'+goods_old['images']['raw'],
                    'introduction':goods_old['brief'],
                    #'lucky_draw_credits':99,
                    'lucky_people_num':0,
                    'credit_exchange_people_num':0,
                    'is_credit_exchange':is_exchange,
                    'is_new_goods':random.choice([0,1]),
-                   'is_lucky':is_lucky,
+                   'is_lucky_goods':is_lucky,
                    'lucky_draw_credits':10,
                    'priceseg':goods_old['priceseg'],
                    'price':goods_old['price'],
@@ -137,25 +154,30 @@ def put_goods():
         
         goods=json.dumps(goods,ensure_ascii=False,encoding='utf-8')
         #goods=goods.encode('utf-8')
-        redis_client.set_one_content('e_live_goods', id, goods)
+        redis_client.set_one_content('e_live_goods', goods_old['prodid'], goods)
         id+=1
 if __name__=="__main__":
     import urllib2,urllib,hashlib
     password=hashlib.md5()
     password.update('bfd_test1')
     password=password.hexdigest()
-    url='http://192.168.188.176:8000/user_manage/credit_exchange/'
-    #url='http://127.0.0.1:8000/user_manage/credit_exchange/'
+    url='http://192.168.188.176:8000/user_manage/friends_invitation/'
+    #url='http://127.0.0.1:8000/user_manage/routette/'
     headers={'content-type':'application/json',
              }
-    post={'username':'bfd_test1','password':'1082aafcc16309198d7afc7b3d9e9e75','goodsid':10001}
+    post={'username':'Terry','password':'96e79218965eb72c92a549dd5a330112','goodsid':1001}
     post=urllib.urlencode(post)
     req=urllib2.Request(url,data=post)
     res=urllib2.urlopen(req)
     print res.read()
     #get_user('bfd_test1')
     #test_goods()
+    #del_users()
     #test_user()
     #del_goods()
+    
     #put_goods()
-    get_goods()
+    #get_goods()
+    #test_logo()
+    
+    get_user()

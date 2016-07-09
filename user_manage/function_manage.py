@@ -77,8 +77,9 @@ def get_like_goods(user_name):
     user=user_manage.User(user_obj)
     for i in user.like_goods:
         goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, i)
-        goods=goods_manage.Goods(goods_obj)
-        like_goods.append(goods.object_to_dict())
+        if goods_obj:
+            goods=goods_manage.Goods(goods_obj)
+            like_goods.append(goods.object_to_dict())
     return like_goods
         
         
