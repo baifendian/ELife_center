@@ -60,6 +60,7 @@ class Goods(object):
         self.normal_image=dict_object.get('normal_image','')
         self.raw_image=dict_object.get('raw_image','')
         self.introduction=dict_object.get('introduction','no introduction')
+        self.detail=dict_object.get('detail',[])
         self.lucky_people_num=dict_object.get('lucky_people_num',0)
         self.credit_exchange_people_num=dict_object.get('credit_exchange_people_num',0)
         self.price=dict_object.get('price',0)
@@ -88,6 +89,7 @@ class Goods(object):
                    'normal_image':self.normal_image,
                    'raw_image':self.normal_image,
                    'introduction':self.introduction,
+                   'detail':self.detail,
                    'lucky_draw_credits':self.lucky_draw_credits,
                    'lucky_people_num':self.lucky_people_num,
                    'credit_exchange_people_num':self.credit_exchange_people_num,
@@ -115,6 +117,7 @@ class Goods(object):
                    'normal_image':self.normal_image,
                    'raw_image':self.normal_image,
                    'introduction':self.introduction,
+                   'detail':self.detail,
                    'lucky_draw_credits':self.lucky_draw_credits,
                    'lucky_people_num':self.lucky_people_num,
                    'credit_exchange_people_num':self.credit_exchange_people_num,

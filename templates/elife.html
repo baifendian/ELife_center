@@ -50,6 +50,7 @@
               contentType:"application/x-www-form-urlencoded",  
               success: function (returndata) {  
                   console.log(returndata);  
+                  alert('加油成功！')
                   if(window.localStorage){
                     // localStorage.flag = 1;
                     localStorage.setItem(username,1);

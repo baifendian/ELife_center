@@ -108,3 +108,6 @@ GOODS_HASH_NAME='e_live_goods'
 USERS_HASH_NAME='e_live_users'
 #the name of hash about  log ,using credits to exchange goods
 RECORD_HASH_NAME='e_live_record'
+
+#lucky draw use credits num
+LUCKY_DRAW_CREDITS=10

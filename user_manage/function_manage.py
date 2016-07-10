@@ -83,7 +83,7 @@ def get_like_goods(user_name):
     return like_goods
         
         
-def routette_lucky_draw(orand = None):
+def get_lucky_draw_items(orand = None):
     all_lucky_goods=get_lucky_draw_goods()
     three_level=[]
     two_level=[]
@@ -96,19 +96,7 @@ def routette_lucky_draw(orand = None):
         elif one['priceseg']==4:
             one_level.append(one['goodsid'])
     luck_items = [three_level, two_level, one_level]
-    if not orand:
-        orand = random.Random()
-    fr = orand.uniform(0.00001, 1.)
-    if fr > 0.1:
-        return 0, None
-    fr = orand.uniform(0.00001, 1.)
-    thresholds=[0.7, 0.9, 1]
-    for i in xrange(len(thresholds)):
-        if fr <= thresholds[i]:
-            ri = orand.randint(1, len(luck_items[i]))-1
-            return 3-i, luck_items[i][ri]
-        
-        
+    return luck_items
 def signin_gain(orand):
     '''
         get luck number for sign in action, average number is 10, scope is 1-100
@@ -123,32 +111,48 @@ def signin_gain(orand):
         if xr <= ratio_seg[j]:
             return orand.randint(rand_seg[j]+1, rand_seg[j+1])
         
-def lucky_draw(orand=None, luck_items=None):
+def lucky_draw(orand=None, luck_items_or_level=None, inums=None):
     '''
         抽奖算法
         输入参数：
             orand：随机数对象, random.Random()
-            luck_items: 轮盘抽奖是传入带抽奖的商品ID列表，形如:[[1,2,3,4], [5,6,7], [8,9]]
+            luck_items_or_level: 轮盘抽奖是传入带抽奖的商品ID列表，形如:[[1,2,3,4], [5,6,7], [8,9]]
+                    或者商品的价值等级（对应抽奖等级），1、2、3、4对应于 3、3、2、1
+            inums：对应3个等次的奖品的数目
         返回：
             中奖等级：0、1、2、3, 分别对应于 未中奖、1等奖、2等奖、3等奖，对应的概率为：90%、1%、2%、7%
-            中奖商品ID：传入luck_items参数时，返回中奖商品ID
+            中奖商品ID：传入luck_items_or_level列表参数时，返回中奖商品ID
     '''
     if not orand:
         orand = random.Random()
     fr = orand.uniform(1.e-8, 1.)
-    thresholds = [0, 0.07, 0.09, 0.1]
+    thresholds = [0, 0.21, 0.27, 0.3]
+    if inums:
+        isum = sum(inums)
+        nthresholds = [0.] * 4
+        for i in xrange(len(inums)):
+            nthresholds[i+1] = (thresholds[i+1] - thresholds[i]) * isum / inums[i] + nthresholds[i]
+        #print nthresholds
+        thresholds = nthresholds
     for i in xrange(len(thresholds)-1):
         if fr > thresholds[i] and fr <= thresholds[i+1]:
-            if luck_items:
-                ri = orand.randint(1, len(luck_items[i]))-1
-                return 3-i, luck_items[i][ri]
-            # return prize level, and itemid
-            return 3-i, None
+            if not inums:
+                ri = orand.randint(1, len(luck_items_or_level[i]))-1
+                return 3-i, luck_items_or_level[i][ri]
+            l0 = luck_items_or_level
+            if luck_items_or_level < 3 or luck_items_or_level > 4:
+                luck_items_or_level = 0     # 0
+            else:
+                luck_items_or_level -= 2    # 1, 2
+            if i == luck_items_or_level:
+                #print 3-luck_items_or_level, l0
+                return 3-luck_items_or_level, None  # 0, 1, 2 => 3, 2, 1
     # not BINGO
     return 0, None
 
-
 if __name__=="__main__":
     ord=random.Random()
-    print routette_lucky_draw()
+    luck_items = [[1026, 1044, 1029, 1028, 1022, 1023, 1011, 1031], [1048, 1045, 1037, 1012],
+                  [1004, 1002, 1001, 1008, 1009, 1034]]
+    print lucky_draw(random.Random())
     print signin_gain(ord)

@@ -97,10 +97,8 @@ def routette(request):
     if not username:
         result={'code':501,'msg':'not input username'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
-    print username
     username=username.lower()
     user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
-    print user_obj
     if not user_obj:
         result={'code':502,'msg':'the user not exist'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
@@ -109,14 +107,14 @@ def routette(request):
         result={'code':504,'msg':'the user have not login'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     #print user.object_to_json()
-    if user.credits<10:
+    if user.credits<settings.LUCKY_DRAW_CREDITS:
         result={'code':503,'msg':'the credits not enough'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     else:
-        user.credits=user.credits-10
+        user.credits=user.credits-settings.LUCKY_DRAW_CREDITS
         redis_client.set_one_content(settings.USERS_HASH_NAME, username, user.object_to_json())
-        
-        prize_level,goods_id=function_manage.routette_lucky_draw(random.Random())
+        lucky_draw_goods=function_manage.get_lucky_draw_items()
+        prize_level,goods_id=function_manage.lucky_draw(random.Random(),lucky_draw_goods)
         if goods_id:
             goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, goods_id)
             goods=goods_manage.Goods(goods_obj)
@@ -125,6 +123,20 @@ def routette(request):
             prize={}
         result={'code':0,'msg':'ok','prizelevel':prize_level,'user':user.object_to_dict(),'prize':prize}
         #需要保存记录
+        if prize_level!=0:
+            time_temp=str(datetime.datetime.now())
+            routette_log={
+                      'username':user.name,
+                      'time':time_temp,
+                      'goods_name':goods.name,
+                      #'goods_name':'%d level prize'%prize_level,
+                      'image':goods.large_image,
+                      'introduction':'%d level prize'%prize_level,
+                      'type':2,#0 is lucky draw,1 is exchange,2 is routette
+                      'credits':settings.LUCKY_DRAW_CREDITS,
+                      }
+            redis_client.set_one_content(settings.RECORD_HASH_NAME, time_temp, json.dumps(routette_log,ensure_ascii=False,encoding='utf-8'))
+        
            
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
 
@@ -142,7 +154,6 @@ def credit_exchange(request):
     goods_obj=redis_client.get_one_content(settings.GOODS_HASH_NAME, goods_id)
     user_obj=redis_client.get_one_content(settings.USERS_HASH_NAME, username)
     user=user_manage.User(user_obj)
-    print user.object_to_json()
     goods=goods_manage.Goods(goods_obj)
     if user.status!=1:
         result={'code':301,'msg':'the user have not login'}
@@ -192,8 +203,6 @@ def lucky_draw(request):
         result={'code':402,'msg':'the user have not login'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     goods=goods_manage.Goods(goods_obj)
-    print user.object_to_json()
-    print goods.object_to_json()
     if user.credits<goods.lucky_draw_credits:
         result={'code':403,'msg':'the credits not enough'}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
@@ -203,7 +212,13 @@ def lucky_draw(request):
         time_temp=str(datetime.datetime.now())
         redis_client.set_one_content(settings.GOODS_HASH_NAME,goods.id,goods.object_to_json())
         redis_client.set_one_content(settings.USERS_HASH_NAME, username, user.object_to_json())
-        lucky_drawl_log={
+        lucky_draw_items=function_manage.get_lucky_draw_items()
+        inums=[len(v) for v in lucky_draw_items]
+        prize,_=function_manage.lucky_draw(random.Random(), goods.priceseg, inums)
+        #lucky=function_manage.lucky_draw(random.Random())
+        if prize!=0:
+            prize=1
+            lucky_drawl_log={
                       'username':user.name,
                       'time':time_temp,
                       'goods_name':goods.name,
@@ -212,11 +227,9 @@ def lucky_draw(request):
                       'type':0,
                       'credits':goods.lucky_draw_credits,
                       }
-        redis_client.set_one_content(settings.RECORD_HASH_NAME,time_temp , json.dumps(lucky_drawl_log,ensure_ascii=False,encoding='utf-8'))
-        lucky=function_manage.lucky_draw(random.Random())
-        if lucky!=0:
-            lucky=1
-        result={'code':0,'msg':'ok','lucky':lucky,'user':user.object_to_dict()}
+            redis_client.set_one_content(settings.RECORD_HASH_NAME,time_temp , json.dumps(lucky_drawl_log,ensure_ascii=False,encoding='utf-8'))
+        
+        result={'code':0,'msg':'ok','lucky':prize,'user':user.object_to_dict()}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
 
 @csrf_exempt
@@ -262,16 +275,15 @@ def sign_in(request):
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
     user=result[user_name]
     user=user_manage.User(user)
-    print user.object_to_json()
     if user.sign_in_day==str(datetime.date.today()):
         result={'code':702,'msg':'the username have sign in','user':user.object_to_dict()}
         return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
-    
-    user.credits+=function_manage.signin_gain(random.Random())
+    add_credits=function_manage.signin_gain(random.Random())
+    user.credits+=add_credits
     user.sign_in_num+=1
     user.sign_in_day=str(datetime.date.today())
     redis_client.set_one_content(settings.USERS_HASH_NAME, user_name, user.object_to_json())
-    result={'code':0,'msg':'ok','user':user.object_to_dict()}
+    result={'code':0,'msg':'ok','addcredits':add_credits,'user':user.object_to_dict()}
     return HttpResponse(json.dumps(result,ensure_ascii=False,encoding='utf-8'))
 
 @csrf_exempt   
